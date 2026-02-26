@@ -49,7 +49,17 @@ class CartController extends Controller
     public function count()
     {
         $cart  = $this->getOrCreateCart();
-        return response()->json(['count' => $cart ? $cart->item_count : 0]);
+        $items = [];
+        if ($cart) {
+            foreach ($cart->items as $item) {
+                // Return keyed by product_id for simple lookup
+                $items[$item->product_id] = $item->quantity;
+            }
+        }
+        return response()->json([
+            'count' => $cart ? $cart->item_count : 0,
+            'items' => $items,
+        ]);
     }
 
 
@@ -95,6 +105,54 @@ class CartController extends Controller
         $request->validate(['quantity' => 'required|integer|min:1|max:100']);
         $item->update(['quantity' => $request->quantity]);
         return redirect()->route('cart.index');
+    }
+
+    public function updateItemQty(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'variant_id' => 'nullable|exists:product_variants,id',
+            'quantity'   => 'required|integer|min:0|max:100',
+        ]);
+
+        $product  = Product::findOrFail($request->product_id);
+        $variant  = $request->variant_id ? ProductVariant::find($request->variant_id) : null;
+        $price    = $variant?->price ?? $product->current_price;
+        $quantity = $request->quantity;
+
+        $cart = $this->getOrCreateCart();
+        $item = $cart->items()
+            ->where('product_id', $product->id)
+            ->where('variant_id', $request->variant_id)
+            ->first();
+
+        if ($quantity <= 0) {
+            if ($item) {
+                $item->delete();
+            }
+        } else {
+            if ($item) {
+                $item->update(['quantity' => $quantity]);
+            } else {
+                $cart->items()->create([
+                    'product_id' => $product->id,
+                    'variant_id' => $request->variant_id,
+                    'quantity'   => $quantity,
+                    'price'      => $price,
+                ]);
+            }
+        }
+
+        $items = [];
+        foreach ($cart->fresh()->items as $cartItem) {
+            $items[$cartItem->product_id] = $cartItem->quantity;
+        }
+
+        return response()->json([
+            'success' => true,
+            'count'   => $cart->fresh()->item_count,
+            'items'   => $items
+        ]);
     }
 
     public function remove(CartItem $item)

@@ -33,6 +33,7 @@ use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\ShippingController;
+use App\Http\Controllers\Admin\CityController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\RoleController;
 // ─────────────────────────────────────────────────────────────
@@ -114,6 +115,7 @@ Route::prefix('cart')->name('cart.')->group(function () {
     Route::get('/count',        [CartController::class, 'count'])->name('count');
     Route::post('/add',         [CartController::class, 'add'])->name('add');
     Route::put('/update/{item}',[CartController::class, 'update'])->name('update');
+    Route::post('/update-item-qty', [CartController::class, 'updateItemQty'])->name('update-item-qty');
     Route::delete('/remove/{item}', [CartController::class, 'remove'])->name('remove');
     Route::post('/coupon',      [CartController::class, 'applyCoupon'])->name('coupon');
     Route::delete('/coupon',    [CartController::class, 'removeCoupon'])->name('coupon.remove');
@@ -163,6 +165,7 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
 
     // Customers
     Route::middleware('permission:manage_customers')->group(function () {
+        Route::get('customers/datatable',     [CustomerController::class, 'datatable'])->name('customers.datatable');
         Route::resource('customers', CustomerController::class)->only(['index', 'show']);
         Route::post('customers/{user}/ban',   [CustomerController::class, 'ban'])->name('customers.ban');
         Route::post('customers/{user}/unban', [CustomerController::class, 'unban'])->name('customers.unban');
@@ -206,23 +209,17 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('reports/export',   [ReportController::class, 'export'])->name('reports.export');
     });
 
-    // Shipping
+    // Shipping & Cities
     Route::middleware('permission:manage_shipping')->group(function () {
-        Route::resource('shipping/zones', ShippingController::class)->names([
-            'index'   => 'shipping.index',
-            'create'  => 'shipping.create',
-            'store'   => 'shipping.store',
-            'edit'    => 'shipping.edit',
-            'update'  => 'shipping.update',
-            'destroy' => 'shipping.destroy',
-        ]);
+        Route::resource('cities', CityController::class)->except(['show']);
     });
 
-    // Settings
+    // Settings & Configuration
     Route::middleware('permission:manage_settings')->group(function () {
         Route::get('settings',          [SettingController::class, 'index'])->name('settings.index');
         Route::post('settings',         [SettingController::class, 'update'])->name('settings.update');
         Route::post('settings/mail-test', [SettingController::class, 'testMail'])->name('settings.mail.test');
+        Route::resource('payment-methods', App\Http\Controllers\Admin\PaymentMethodController::class)->except('show');
     });
 
     // Activity Log

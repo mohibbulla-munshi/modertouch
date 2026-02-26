@@ -17,8 +17,20 @@
                 <div class="col-6">{{ ucfirst(str_replace('_',' ',$order->payment_method)) }}</div>
                 <div class="col-6 text-muted small">Total:</div>
                 <div class="col-6 fw-bold fs-5" style="color:#1B3A5C">৳ {{ number_format($order->total, 0) }}</div>
-                <div class="col-6 text-muted small">Status:</div>
-                <div class="col-6"><span class="badge bg-warning-subtle text-warning">Pending</span></div>
+                <div class="col-6 text-muted small">Order Status:</div>
+                <div class="col-6"><span class="badge bg-warning-subtle text-warning">{{ ucfirst($order->status) }}</span></div>
+                <div class="col-6 text-muted small mt-2">Payment Status:</div>
+                <div class="col-6 mt-2">
+                    @php
+                        $payColor = match($order->payment_status) {
+                            'paid' => 'success',
+                            'failed' => 'danger',
+                            'refunded' => 'secondary',
+                            default => 'warning'
+                        };
+                    @endphp
+                    <span class="badge bg-{{ $payColor }}-subtle text-{{ $payColor }}">{{ ucfirst($order->payment_status) }}</span>
+                </div>
             </div>
         </div>
 

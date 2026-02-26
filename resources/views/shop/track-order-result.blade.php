@@ -16,7 +16,7 @@
                     <div class="card-body p-4">
                         <h5 class="fw-bold mb-4">Order Status</h5>
                         @php
-                            $statuses = ['pending', 'processing', 'shipped', 'delivered'];
+                            $statuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
                             $currentIndex = array_search($order->status, $statuses);
                             if ($currentIndex === false && $order->status !== 'cancelled') $currentIndex = 0;
                         @endphp
@@ -28,7 +28,7 @@
                         @else
                         <div class="position-relative m-4">
                             <div class="progress" style="height: 4px;">
-                                <div class="progress-bar bg-primary" role="progressbar" style="width: {{ ($currentIndex / 3) * 100 }}%;"></div>
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: {{ ($currentIndex / 4) * 100 }}%;"></div>
                             </div>
                             <div class="d-flex justify-content-between position-absolute top-0 w-100" style="margin-top: -12px;">
                                 @foreach($statuses as $index => $status)

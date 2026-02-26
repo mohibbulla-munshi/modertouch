@@ -17,7 +17,7 @@ class Product extends Model
     protected $fillable = [
         'category_id', 'name', 'slug', 'sku', 'short_description', 'description',
         'specifications', 'price', 'sale_price', 'stock', 'low_stock_threshold',
-        'weight', 'dimensions', 'featured_image', 'meta_title', 'meta_description',
+        'weight', 'dimensions', 'featured_image', 'video_url', 'meta_title', 'meta_description',
         'is_active', 'is_featured', 'views',
     ];
 
@@ -40,8 +40,8 @@ class Product extends Model
     public function getCurrentPriceAttribute(): float
     {
         return $this->sale_price && $this->sale_price < $this->price
-            ? $this->sale_price / 100
-            : $this->price / 100;
+            ? (float) $this->sale_price
+            : (float) $this->price;
     }
 
     protected function price(): Attribute

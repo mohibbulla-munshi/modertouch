@@ -42,7 +42,7 @@
     <div class="row g-4">
 
         {{-- Main Column --}}
-        <div class="col-lg-8">
+        <div class="col-lg-8 mb-4 mb-lg-0">
 
             {{-- Basic Info --}}
             <div class="admin-card mb-4">
@@ -63,7 +63,7 @@
 
                     <div class="mb-0">
                         <label class="form-label">Full Description</label>
-                        <textarea name="description" class="form-control" rows="7">{{ old('description', $product->description) }}</textarea>
+                        <textarea name="description" class="form-control summernote" rows="7">{{ old('description', $product->description) }}</textarea>
                     </div>
                 </div>
             </div>
@@ -116,53 +116,6 @@
                 </div>
             </div>
 
-            {{-- Gallery --}}
-            <div class="admin-card">
-                <div class="card-header">
-                    <span><i class="bi bi-images me-2" style="color:var(--teal)"></i>Product Gallery</span>
-                    <span style="font-size:.78rem;color:var(--text-3)">{{ $product->images->count() }} images</span>
-                </div>
-                <div class="card-body">
-                    @if($product->images->count() > 0)
-                    <div class="row g-3 mb-4">
-                        @foreach($product->images as $img)
-                        <div class="col-6 col-md-3 col-lg-2">
-                            <div style="position:relative;border-radius:8px;overflow:hidden;border:1.5px solid var(--border)">
-                                <img src="{{ asset('storage/' . $img->image_path) }}"
-                                     style="width:100%;aspect-ratio:1;object-fit:cover" alt="Product Image">
-                                <form action="{{ route('admin.products.images.destroy', $img->id) }}" method="POST"
-                                      style="position:absolute;top:6px;right:6px">
-                                    @csrf @method('DELETE')
-                                    <button type="submit"
-                                            style="width:26px;height:26px;border-radius:50%;background:rgba(239,68,68,.9);border:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.75rem"
-                                            title="Remove image">
-                                        <i class="bi bi-x"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-                    @else
-                    <div class="text-center py-3" style="color:var(--text-3);font-size:.875rem">
-                        <i class="bi bi-images fs-3 d-block mb-2" style="opacity:.4"></i>
-                        No gallery images yet.
-                    </div>
-                    @endif
-
-                    {{-- Add more images --}}
-                    <div style="background:var(--surface-2);border:2px dashed var(--border);border-radius:var(--radius);padding:20px;text-align:center">
-                        <label class="form-label mb-2" style="cursor:pointer">
-                            <i class="bi bi-cloud-upload" style="font-size:1.5rem;color:var(--text-3);display:block;margin-bottom:6px"></i>
-                            <span style="font-size:.84rem;color:var(--text-2)">Click or drag to upload additional gallery images</span>
-                        </label>
-                        <input type="file" name="images[]" class="form-control" accept="image/*" multiple
-                               style="max-width:280px;margin:0 auto">
-                    </div>
-                </div>
-            </div>
-
-        </div>
 
         {{-- Dynamic Product Variants --}}
         <div class="admin-card mb-4">
@@ -184,6 +137,8 @@
             <div class="card-body" id="tabsContainer">
                 <div style="font-size:0.875rem; color:var(--text-3); margin-bottom:10px;">Dynamically add sections like "Specifications", "Warranty", "How to Use" to the product page.</div>
             </div>
+        </div>
+        
         </div>
 
         {{-- Sidebar --}}
@@ -232,7 +187,7 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <label class="form-label">Category <span style="color:#EF4444">*</span></label>
-                        <select name="category_id" class="form-select @error('category_id') is-invalid @enderror" required>
+                        <select name="category_id" class="form-select select2 @error('category_id') is-invalid @enderror" required>
                             <option value="">— Select Category —</option>
                             @foreach($categories as $cat)
                                 <option value="{{ $cat->id }}" {{ old('category_id', $product->category_id) == $cat->id ? 'selected' : '' }}>
@@ -242,9 +197,9 @@
                         </select>
                         @error('category_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    <div>
+                    <div class="mb-0">
                         <label class="form-label">Tags</label>
-                        <select name="tags[]" class="form-select" multiple style="height:120px">
+                        <select name="tags[]" class="form-select select2" multiple data-placeholder="Select product tags...">
                             @foreach($tags as $t)
                                 <option value="{{ $t->id }}" {{ in_array($t->id, old('tags', $product->tags->pluck('id')->toArray())) ? 'selected' : '' }}>
                                     {{ $t->name }}
@@ -256,22 +211,81 @@
                 </div>
             </div>
 
-            {{-- Featured Image --}}
+            {{-- Media --}}
             <div class="admin-card">
-                <div class="card-header"><i class="bi bi-image me-2" style="color:var(--teal)"></i>Featured Image</div>
+                <div class="card-header"><i class="bi bi-images me-2" style="color:var(--teal)"></i>Media</div>
                 <div class="card-body">
-                    @if($product->featured_image)
-                    <div class="mb-3">
-                        <img src="{{ asset('storage/' . $product->featured_image) }}"
-                             style="width:100%;border-radius:8px;border:1.5px solid var(--border);max-height:180px;object-fit:cover"
-                             id="currentFeatured" alt="Featured Image">
+                    <div class="mb-4">
+                        <label class="form-label">Primary / Featured Image</label>
+                        @if($product->featured_image)
+                        <div class="mb-3">
+                            <img src="{{ asset('storage/' . $product->featured_image) }}"
+                                 style="width:100%;border-radius:8px;border:1.5px solid var(--border);max-height:180px;object-fit:cover"
+                                 id="currentFeatured" alt="Featured Image">
+                        </div>
+                        @endif
+                        <div id="newFeaturedPreview" class="align-items-center justify-content-center" style="min-height: 180px; border: 2px dashed var(--border); border-radius: 8px; background: var(--surface-1); overflow: hidden; margin-bottom: 12px; display: none;"></div>
+                        <input type="file" name="featured_image" id="featuredImg"
+                               class="form-control @error('featured_image') is-invalid @enderror" accept="image/*">
+                        @error('featured_image')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    @endif
-                    <div id="newFeaturedPreview"></div>
-                    <label class="form-label">{{ $product->featured_image ? 'Replace Image' : 'Upload Image' }}</label>
-                    <input type="file" name="featured_image" id="featuredImg"
-                           class="form-control @error('featured_image') is-invalid @enderror" accept="image/*">
-                    @error('featured_image')<div class="invalid-feedback">{{ $message }}</div>@enderror
+
+                    <div class="mb-4">
+                        <label class="form-label">Product Video URL</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-youtube" style="color:#EF4444"></i></span>
+                            <input type="url" name="video_url" id="videoUrlInput" class="form-control" value="{{ old('video_url', $product->video_url) }}" placeholder="YouTube or Vimeo link...">
+                        </div>
+                        <div style="font-size:.72rem;color:var(--text-3);margin-top:4px;margin-bottom:12px;">Optional video embed link</div>
+                        
+                        <div id="videoPreviewContainer" style="display: {{ $product->video_url ? 'block' : 'none' }}; border-radius: 8px; overflow: hidden; border: 1px solid var(--border);">
+                            @php
+                                $embedUrl = $product->video_url;
+                                if($embedUrl) {
+                                    if(str_contains($embedUrl, 'youtube.com/watch?v=')) {
+                                        $embedUrl = str_replace('youtube.com/watch?v=', 'youtube.com/embed/', $embedUrl);
+                                        $embedUrl = explode('&', $embedUrl)[0];
+                                    } elseif(str_contains($embedUrl, 'youtu.be/')) {
+                                        $embedUrl = str_replace('youtu.be/', 'youtube.com/embed/', $embedUrl);
+                                        $embedUrl = explode('?', $embedUrl)[0];
+                                    }
+                                }
+                            @endphp
+                            <iframe id="videoPreviewFrame" width="100%" height="200" src="{{ $embedUrl }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                    </div>
+
+                    <div class="mb-0">
+                        <label class="form-label d-flex justify-content-between align-items-center">
+                            <span>Gallery Images</span>
+                            <span style="font-size:.78rem;color:var(--text-3)">{{ $product->images->count() }} existing</span>
+                        </label>
+                        
+                        @if($product->images->count() > 0)
+                        <div class="row g-2 mb-3">
+                            @foreach($product->images as $img)
+                            <div class="col-4">
+                                <div style="position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)">
+                                    <img src="{{ asset('storage/' . $img->image_path) }}"
+                                         style="width:100%;aspect-ratio:1;object-fit:cover" alt="Gallery Image">
+                                    <button type="button" onclick="confirmImageDelete('{{ $img->id }}')"
+                                            style="width:22px;height:22px;border-radius:50%;background:rgba(239,68,68,.9);border:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.75rem;position:absolute;top:4px;right:4px"
+                                            title="Remove image">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                        @else
+                        <div class="text-center py-2 mb-3" style="color:var(--text-3);font-size:.8rem;background:var(--surface-1);border-radius:6px;border:1px dashed var(--border)">
+                            No gallery images yet.
+                        </div>
+                        @endif
+
+                        <input type="file" name="images[]" id="galleryPond" multiple data-allow-reorder="true" data-max-file-size="3MB" data-max-files="50">
+                        <div style="font-size:.72rem;color:var(--text-3);margin-top:4px">Drag & drop multiple images. Premium upload experience.</div>
+                    </div>
                 </div>
             </div>
 
@@ -283,24 +297,45 @@
     @csrf @method('DELETE')
 </form>
 
-@push('scripts')
-<script>
-document.getElementById('featuredImg')?.addEventListener('change', function () {
-    const preview = document.getElementById('newFeaturedPreview');
-    const current = document.getElementById('currentFeatured');
-    if (this.files[0]) {
-        const url = URL.createObjectURL(this.files[0]);
-        if (current) current.src = url;
-        else {
-            preview.innerHTML = `<img src="${url}" style="width:100%;border-radius:8px;border:1.5px solid var(--border);max-height:180px;object-fit:cover;margin-bottom:12px">`;
-        }
-    }
-});
+@foreach($product->images as $img)
+<form id="del-img-{{ $img->id }}" action="{{ route('admin.products.images.destroy', $img->id) }}" method="POST" class="d-none">
+    @csrf @method('DELETE')
+</form>
+@endforeach
 
-let variantIndex = 0;
+@push('scripts')
+<!-- jQuery (Required for plugins) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- FilePond CSS -->
+<link href="//unpkg.com/filepond/dist/filepond.css" rel="stylesheet">
+<link href="//unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css" rel="stylesheet">
+
+<!-- Summernote CSS & JS -->
+<link href="//cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
+<script src="//cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
+
+<!-- Select2 CSS & JS -->
+<link href="//cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="//cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<!-- FilePond JS -->
+<script src="//unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.js"></script>
+<script src="//unpkg.com/filepond/dist/filepond.js"></script>
+
+<script>
+function confirmImageDelete(id) {
+    if (confirm('Are you sure you want to delete this image?')) {
+        document.getElementById('del-img-' + id).submit();
+    }
+}
+
+// Global variables for dynamic elements placed at the top to avoid TDZ errors
+var variantIndex = 0;
 function addVariant(data = null) {
-    const container = document.getElementById('variantsContainer');
-    const row = document.createElement('div');
+    var container = document.getElementById('variantsContainer');
+    if (!container) return;
+    var row = document.createElement('div');
     row.className = 'row g-2 mb-3 align-items-end p-3';
     row.style.background = 'var(--surface-2)';
     row.style.border = '1px solid var(--border)';
@@ -336,10 +371,11 @@ function addVariant(data = null) {
     variantIndex++;
 }
 
-let tabIndex = 0;
+var tabIndex = 0;
 function addTab(data = null) {
-    const container = document.getElementById('tabsContainer');
-    const box = document.createElement('div');
+    var container = document.getElementById('tabsContainer');
+    if (!container) return;
+    var box = document.createElement('div');
     box.className = 'mb-4 p-3';
     box.style.background = 'var(--surface-2)';
     box.style.border = '1px solid var(--border)';
@@ -356,26 +392,160 @@ function addTab(data = null) {
         <input type="text" name="tabs[${tabIndex}][heading]" class="form-control mb-2" placeholder="e.g. Specifications" value="${headingVal}" required>
         
         <label class="form-label mb-1" style="font-size:.85rem; font-weight:600">Tab Content</label>
-        <textarea name="tabs[${tabIndex}][content]" class="form-control" rows="4" placeholder="Tab HTML/Text content...">${contentVal}</textarea>
+        <textarea name="tabs[${tabIndex}][content]" class="summernote-tab" rows="4" placeholder="Tab HTML/Text content...">${contentVal}</textarea>
     `;
     container.appendChild(box);
+    // Initialize Summernote for this new tab safely
+    try {
+        $(box).find('.summernote-tab').summernote({
+            height: 150,
+            toolbar: [
+                ['style', ['bold', 'italic', 'underline', 'clear']],
+                ['font', ['strikethrough', 'superscript', 'subscript']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['insert', ['link', 'picture', 'video']],
+                ['view', ['codeview']]
+            ]
+        });
+    } catch(e) { console.warn("Summernote load fail in tab:", e); }
+    
     tabIndex++;
 }
 
-// Preload existing variants and tabs
-const existingVariants = @json($product->variants);
-if (existingVariants && existingVariants.length) {
-    existingVariants.forEach(v => addVariant({
-        id: v.id, name: v.name, sku: v.sku, price: v.price > 0 ? (v.price) : '', stock: v.stock
-    }));
-}
-const existingTabs = @json($product->tabs);
-if (existingTabs && existingTabs.length) {
-    existingTabs.forEach(t => addTab({
-        id: t.id, heading: t.heading, content: t.content
-    }));
-}
+// Comprehensive Initialization with Error Protection
+document.addEventListener("DOMContentLoaded", function() {
+    console.log("ModernTouch: Initializing Edit UI Components...");
+
+    // Preload existing variants and tabs
+    try {
+        const existingVariants = @json($product->variants);
+        if (existingVariants && existingVariants.length) {
+            existingVariants.forEach(v => addVariant({
+                id: v.id, name: v.name, sku: v.sku, price: v.price > 0 ? (v.price) : '', stock: v.stock
+            }));
+        }
+        const existingTabs = @json($product->tabs);
+        if (existingTabs && existingTabs.length) {
+            existingTabs.forEach(t => addTab({
+                id: t.id, heading: t.heading, content: t.content
+            }));
+        }
+    } catch(e) { console.error("ModernTouch: Data preload error", e); }
+
+    // FilePond Initialization
+    try {
+        if (typeof FilePond !== 'undefined') {
+            if (typeof FilePondPluginImagePreview !== 'undefined') {
+                FilePond.registerPlugin(FilePondPluginImagePreview);
+            }
+            const pondInput = document.querySelector('#galleryPond');
+            if (pondInput) {
+                FilePond.create(pondInput, {
+                    allowMultiple: true,
+                    allowReorder: true,
+                    storeAsFile: true,
+                    labelIdle: 'Add Gallery Images or <span class="filepond--label-action">Browse</span>',
+                    imagePreviewHeight: 140,
+                    itemInsertLocation: 'after'
+                });
+                console.log("ModernTouch: FilePond Ready.");
+            }
+        }
+    } catch(e) { console.error("ModernTouch: FilePond error", e); }
+
+    // jQuery Powered Plugins (Summernote, Select2)
+    try {
+        if (typeof jQuery !== 'undefined') {
+            const $ = jQuery;
+            
+            // Summernote
+            if ($.fn.summernote) {
+                $('.summernote').summernote({
+                    height: 250,
+                    placeholder: 'Detailed product description...',
+                    toolbar: [
+                        ['style', ['style']],
+                        ['font', ['bold', 'underline', 'clear']],
+                        ['color', ['color']],
+                        ['para', ['ul', 'ol', 'paragraph']],
+                        ['table', ['table']],
+                        ['insert', ['link', 'picture', 'video']],
+                        ['view', ['fullscreen', 'codeview']]
+                    ]
+                });
+                console.log("ModernTouch: Summernote Ready.");
+            }
+
+            // Select2
+            if ($.fn.select2) {
+                $('.select2').select2({
+                    width: '100%',
+                    placeholder: $(this).data('placeholder')
+                });
+                console.log("ModernTouch: Select2 Ready.");
+            }
+        }
+    } catch(e) { console.error("ModernTouch: jQuery plugins error", e); }
+});
+
+// Live image preview safely wrapped
+try {
+    document.getElementById('featuredImg')?.addEventListener('change', function () {
+        const preview = document.getElementById('newFeaturedPreview');
+        const current = document.getElementById('currentFeatured');
+        if (this.files[0]) {
+            const url = URL.createObjectURL(this.files[0]);
+            if (current) {
+                current.src = url;
+            } else if (preview) {
+                preview.style.display = 'flex';
+                preview.innerHTML = `<img src="${url}" style="width:100%; height:180px; object-fit:cover; border-radius:0;">`;
+            }
+        }
+    });
+
+    const videoInput = document.getElementById('videoUrlInput');
+    const videoContainer = document.getElementById('videoPreviewContainer');
+    const videoFrame = document.getElementById('videoPreviewFrame');
+
+    if (videoInput) {
+        videoInput.addEventListener('input', function() {
+            let url = this.value.trim();
+            if (url) {
+                if (url.includes('youtube.com/watch?v=')) {
+                    url = url.replace('youtube.com/watch?v=', 'youtube.com/embed/').split('&')[0];
+                } else if (url.includes('youtu.be/')) {
+                    url = url.replace('youtu.be/', 'youtube.com/embed/').split('?')[0];
+                }
+                videoFrame.src = url;
+                videoContainer.style.display = 'block';
+            } else {
+                videoFrame.src = '';
+                videoContainer.style.display = 'none';
+            }
+        });
+    }
+} catch(e) {}
 </script>
+
+<style>
+/* FilePond Modern Styling Customization */
+.filepond--root {
+    margin-bottom: 0;
+    font-family: inherit;
+}
+.filepond--panel-root {
+    background-color: var(--surface-2);
+    border: 1px solid var(--border);
+}
+.filepond--drop-label {
+    color: var(--text-2);
+}
+.filepond--label-action {
+    text-decoration-color: var(--teal);
+    color: var(--teal);
+}
+</style>
 @endpush
 
 @endsection

@@ -142,6 +142,76 @@
         .category-card .overlay h6{margin:0;font-family:'Barlow',sans-serif;font-weight:700;font-size:.9rem;color:#fff;}
         .category-card .overlay small{color:rgba(255,255,255,.6);font-size:.68rem;}
 
+        /* Chaldal Cart Action Badge */
+        .chaldal-cart-action {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+            width: 120px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            border-radius: 20px;
+            overflow: hidden;
+            background: #fff;
+            opacity: 0;
+            transition: all var(--tr);
+        }
+        .product-card:hover .chaldal-cart-action {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .chaldal-cart-action.has-items {
+            opacity: 1 !important; /* Always show if active */
+        }
+        .chaldal-cart-action .btn-chaldal-add {
+            width: 100%;
+            border: 1px solid var(--primary);
+            background: rgba(255,255,255,0.95);
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 700;
+            padding: 5px 0;
+            cursor: pointer;
+            transition: all var(--tr);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            border-radius: 20px;
+        }
+        .chaldal-cart-action .btn-chaldal-add:hover {
+            background: var(--primary);
+            color: #fff;
+        }
+        .chaldal-cart-action .chaldal-qty-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--primary);
+            color: #fff;
+            width: 100%;
+            border-radius: 20px;
+        }
+        .chaldal-qty-controls button {
+            border: none;
+            background: transparent;
+            color: #fff;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chaldal-qty-controls button:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .chaldal-qty-controls .chaldal-qty-val {
+            font-size: 13px;
+            font-weight: 700;
+        }
+
         /* Breadcrumb */
         .breadcrumb-section{background:var(--surface);padding:12px 0;border-bottom:1px solid var(--border);}
         .breadcrumb-item a{color:var(--teal);font-size:.85rem;font-weight:500;}
@@ -252,8 +322,12 @@
         .card-header{background:var(--surface-2);border-bottom:1px solid var(--border);font-family:'Barlow',sans-serif;font-weight:700;color:var(--primary);padding:12px 18px;font-size:13px;border-radius:var(--radius) var(--radius) 0 0!important;letter-spacing:.1px;}
 
         /* ── Sidebar ──────────────────────────────────────────── */
-        .site-wrapper{display:flex;min-height:100vh;}
-        .cat-sidebar{width:195px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);padding:0;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;scrollbar-width:thin;}
+        .site-wrapper{display:flex;min-height:100vh;transition:padding-left var(--tr);position:relative;}
+        .cat-sidebar{width:220px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);padding:0;position:fixed;top:60px;bottom:0;left:0;z-index:1020;overflow-y:auto;scrollbar-width:thin;transform:translateX(0);transition:transform var(--tr);box-shadow:2px 0 12px rgba(0,0,0,.03);}
+        body.sidebar-closed .cat-sidebar{transform:translateX(-100%);}
+        .site-main{flex:1;min-width:0;padding-left:220px;transition:padding-left var(--tr);}
+        body.sidebar-closed .site-main{padding-left:0;}
+        
         .cat-sidebar::-webkit-scrollbar{width:3px;}
         .cat-sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
         .cat-sidebar .sidebar-title{font-family:'Barlow',sans-serif;font-size:17px;font-weight:800;color:rgb(215,42,78);padding:14px 16px 10px;border-bottom:1px solid var(--border);letter-spacing:.2px;}
@@ -261,7 +335,6 @@
         .cat-sidebar .cat-item:hover{background:var(--surface-2);color:rgb(215,42,78);}
         .cat-sidebar .cat-item img{width:22px;height:22px;object-fit:cover;border-radius:3px;flex-shrink:0;}
         .cat-sidebar .cat-item i{width:22px;text-align:center;font-size:1rem;flex-shrink:0;opacity:.7;}
-        .site-main{flex:1;min-width:0;}
 
         /* ── Mobile sticky bottom nav ─────────────────────────── */
         .mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:56px;background:#fff;border-top:1px solid var(--border);z-index:1050;padding-bottom:env(safe-area-inset-bottom,0);}
@@ -272,7 +345,8 @@
         .mobile-bottom-nav .m-nav-home{width:48px;height:48px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.3rem;margin-top:-8px;box-shadow:0 4px 12px rgba(0,44,54,.35);}
         body.has-mobile-nav{padding-bottom:56px;}
         @media(max-width:991px){
-            .cat-sidebar{display:none;}
+            .site-main{padding-left:0;}
+            body.sidebar-closed .site-main{padding-left:0;}
             .mobile-bottom-nav{display:block;}
         }
 
@@ -281,6 +355,9 @@
             .navbar-main .container{height:auto;flex-wrap:wrap;padding:10px 14px;gap:10px;}
             .search-form{max-width:100%;order:3;width:100%;margin:8px 0 0;}
             .nav-links{gap:0;}
+            .chaldal-cart-action{opacity: 1; bottom: 4px; width: 100px;}
+            .chaldal-cart-action .btn-chaldal-add{font-size: 11px; padding: 4px 0;}
+            .chaldal-qty-controls button{padding: 4px 8px; font-size: 13px;}
         }
         @media(max-width:768px){
             .hero-swiper{height:320px;}.hero-content h1{font-size:2rem;}
@@ -307,8 +384,13 @@
 <nav class="navbar-main" id="mainNav">
     <div class="container" style="max-width:1280px">
 
+        {{-- Desktop Sidebar Toggle --}}
+        <button id="desktopSidebarToggle" class="btn d-none d-lg-flex" type="button" style="background:transparent;border:1px solid var(--border);color:var(--primary);padding:0;width:40px;height:40px;align-items:center;justify-content:center;border-radius:6px;transition:all var(--tr)">
+            <i class="bi bi-list" style="font-size:1.4rem"></i>
+        </button>
+
         {{-- Logo --}}
-        <a class="navbar-brand" href="{{ route('home') }}">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="{{ route('home') }}">
             @if(\App\Models\Setting::getValue('logo'))
                 <img src="{{ asset('storage/' . \App\Models\Setting::getValue('logo')) }}" alt="{{ \App\Models\Setting::getValue('app_name', 'Modern Touch') }}" height="40" style="object-fit:contain">
             @else
@@ -317,7 +399,7 @@
         </a>
 
         {{-- Centre Search --}}
-        <form class="search-form flex-grow-1 d-none d-md-flex" action="{{ route('search') }}" method="GET" style="max-width:540px;margin:0 auto">
+        <form class="search-form flex-grow-1 d-none d-md-flex ms-3" action="{{ route('search') }}" method="GET" style="max-width:540px;margin:0 auto">
             <input class="form-control" name="q" placeholder="Search products..." value="{{ request('q') }}" autocomplete="off">
             <span style="display:flex;align-items:center;padding:0 12px;cursor:pointer;color:var(--text-3)" title="Image search">
                 <i class="bi bi-camera" style="font-size:1.1rem"></i>
@@ -398,7 +480,9 @@
         ->get();
 @endphp
 <aside class="cat-sidebar d-none d-lg-block">
-    <div class="sidebar-title">&#128721; Category</div>
+    <div class="sidebar-title" style="display:flex; align-items:center; justify-content:space-between;">
+        <span>&#128721; Category</span>
+    </div>
     @foreach($sidebarCategories as $sc)
         @if($sc->children->isNotEmpty())
             <div>
@@ -438,7 +522,7 @@
         @endif
     @endforeach
     <a href="{{ route('shop') }}" class="cat-item" style="color:var(--primary);font-weight:600">
-        <i class="bi bi-arrow-right-circle"></i><span>View All</span>
+        <i class="bi bi-arrow-right-circle"></i><span>View All Products</span>
     </a>
 </aside>
 
@@ -638,6 +722,11 @@ if (progress) {
     });
 }
 
+//  Sidebar Toggle
+document.getElementById('desktopSidebarToggle')?.addEventListener('click', () => {
+    document.body.classList.toggle('sidebar-closed');
+});
+
 //  Sticky Navbar Scroll Effect 
 const nav = document.getElementById('mainNav');
 window.addEventListener('scroll', () => {
@@ -662,34 +751,98 @@ document.querySelectorAll('.flash-messages .alert').forEach(el => {
     setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 4500);
 });
 
-//  Cart Count 
-fetch('/cart/count', { headers: { 'Accept': 'application/json' } })
-    .then(r => r.ok ? r.json() : null)
-    .then(d => { if (d) document.querySelectorAll('.cart-count').forEach(el => el.textContent = d.count); })
-    .catch(() => {});
+//  Cart Count & Items Map
+window.cartItems = {};
+function fetchCartData() {
+    fetch('{{ route("cart.count") }}', { headers: { 'Accept': 'application/json' } })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { 
+            if (d) {
+                document.querySelectorAll('.cart-count').forEach(el => el.textContent = d.count); 
+                window.cartItems = d.items || {};
+                updateProductCartUI();
+            }
+        })
+        .catch(() => {});
+}
+fetchCartData();
 
-//  AJAX Add to Cart 
-function addToCart(productId, variantId = null, qty = 1) {
+// Render inline UI
+function updateProductCartUI() {
+    document.querySelectorAll('.chaldal-cart-action').forEach(container => {
+        const pId = container.dataset.productId;
+        const qty = window.cartItems[pId] || 0;
+        const addBtn = container.querySelector('.btn-chaldal-add');
+        const qtyCtrl = container.querySelector('.chaldal-qty-controls');
+        const qtyVal = container.querySelector('.chaldal-qty-val');
+        
+        if (qty > 0) {
+            container.classList.add('has-items');
+            addBtn.style.display = 'none';
+            qtyCtrl.style.display = 'flex';
+            qtyVal.textContent = qty;
+        } else {
+            container.classList.remove('has-items');
+            addBtn.style.display = 'flex';
+            qtyCtrl.style.display = 'none';
+            qtyVal.textContent = 0;
+        }
+    });
+}
+
+// Global updateCartQty for Chaldal-style
+function updateCartQty(productId, actionOrQty) {
+    let currentQty = window.cartItems[productId] || 0;
+    let newQty = currentQty;
+    
+    if (actionOrQty === 'inc') {
+        newQty = currentQty + 1;
+    } else if (actionOrQty === 'dec') {
+        newQty = currentQty - 1;
+    } else {
+        newQty = typeof actionOrQty === 'number' ? actionOrQty : parseInt(actionOrQty, 10);
+    }
+    
+    if (newQty < 0) newQty = 0;
+    
+    // Optimistic UI update
+    window.cartItems[productId] = newQty;
+    updateProductCartUI();
+    
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
-    return fetch('{{ route("cart.add") }}', {
+    fetch('{{ route("cart.update-item-qty") }}', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-        body: JSON.stringify({ product_id: productId, variant_id: variantId, quantity: qty })
+        body: JSON.stringify({ product_id: productId, quantity: newQty })
     })
     .then(r => r.json())
     .then(d => {
         if (d.success) {
             document.querySelectorAll('.cart-count').forEach(el => el.textContent = d.count);
-            Swal.fire({
-                icon: 'success', title: 'Added to Cart!',
-                toast: true, position: 'top-end',
-                showConfirmButton: false, timer: 2200,
-                timerProgressBar: true,
-                background: '#0D7377', color: '#fff',
-                iconColor: '#F0A500'
-            });
+            window.cartItems = d.items || {};
+            updateProductCartUI();
+            
+            // Show toast only on initial add
+            if (currentQty === 0 && newQty > 0) {
+                Swal.fire({
+                    icon: 'success', title: 'Added to Cart!',
+                    toast: true, position: 'top-end',
+                    showConfirmButton: false, timer: 1500,
+                    timerProgressBar: true,
+                    background: '#0D7377', color: '#fff',
+                    iconColor: '#F0A500'
+                });
+            }
         }
+    }).catch(() => {
+        // revert on failure
+        fetchCartData();
     });
+}
+
+//  AJAX Add to Cart (legacy)
+function addToCart(productId, variantId = null, qty = 1) {
+    return updateCartQty(productId, qty);
 }
 </script>
 @stack('scripts')

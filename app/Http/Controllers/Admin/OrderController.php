@@ -55,7 +55,7 @@ class OrderController extends Controller
         $orders   = $query->orderBy($orderBy, $orderDir)->offset($start)->limit($length)->get();
 
         // Status badge colours
-        $statusColors  = ['pending'=>'warning','processing'=>'info','shipped'=>'primary','delivered'=>'success','cancelled'=>'danger'];
+        $statusColors  = ['pending'=>'warning','confirmed'=>'info','processing'=>'primary','shipped'=>'secondary','delivered'=>'success','cancelled'=>'danger'];
         $payColors     = ['pending'=>'#D97706','paid'=>'#059669','failed'=>'#DC2626','refunded'=>'#6B7280'];
         $methodLabels  = ['cod'=>'Cash on Delivery','bank_transfer'=>'Bank Transfer','online'=>'Online'];
 
@@ -138,23 +138,35 @@ class OrderController extends Controller
     public function updateStatus(Request $request, Order $order)
     {
         $request->validate([
-            'status'  => 'required|in:pending,processing,shipped,delivered,cancelled',
-            'comment' => 'nullable|string|max:500',
+            'status'         => 'required|in:pending,confirmed,processing,shipped,delivered,cancelled',
+            'payment_status' => 'required|in:pending,paid,failed,refunded',
+            'comment'        => 'nullable|string|max:500',
         ]);
 
-        $old = $order->status;
-        $order->update(['status' => $request->status]);
-
-        OrderStatusHistory::create([
-            'order_id'   => $order->id,
-            'status'     => $request->status,
-            'comment'    => $request->comment,
-            'changed_by' => auth()->id(),
+        $oldStatus = $order->status;
+        $oldPaymentStatus = $order->payment_status;
+        
+        $order->update([
+            'status'         => $request->status,
+            'payment_status' => $request->payment_status
         ]);
 
-        ActivityLog::record("Order #{$order->order_number} status changed: {$old} → {$request->status}", $order);
+        if ($oldStatus !== $request->status || $request->comment) {
+            OrderStatusHistory::create([
+                'order_id'   => $order->id,
+                'status'     => $request->status,
+                'comment'    => $request->comment,
+                'changed_by' => auth()->id(),
+            ]);
+        }
 
-        return back()->with('success', "Order status updated to {$request->status}.");
+        $logMsg = "Order #{$order->order_number} updated.";
+        if ($oldStatus !== $request->status) $logMsg .= " Status: {$oldStatus} → {$request->status}.";
+        if ($oldPaymentStatus !== $request->payment_status) $logMsg .= " Payment: {$oldPaymentStatus} → {$request->payment_status}.";
+        
+        ActivityLog::record($logMsg, $order);
+
+        return back()->with('success', "Order and payment status updated successfully.");
     }
 
     public function invoice(Order $order)

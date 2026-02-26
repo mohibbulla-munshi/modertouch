@@ -251,6 +251,7 @@
 
         /* ── STATUS BADGES ───────────────────────── */
         .badge-status-pending    { background: rgba(245,158,11,.12); color: #D97706; padding: 4px 10px; border-radius: 20px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+        .badge-status-confirmed  { background: rgba(6,182,212,.12); color: #0891B2; padding: 4px 10px; border-radius: 20px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
         .badge-status-processing { background: rgba(59,130,246,.12); color: #2563EB; padding: 4px 10px; border-radius: 20px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
         .badge-status-shipped    { background: rgba(139,92,246,.12); color: #7C3AED; padding: 4px 10px; border-radius: 20px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
         .badge-status-delivered  { background: rgba(16,185,129,.12); color: #059669; padding: 4px 10px; border-radius: 20px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
@@ -435,12 +436,14 @@
         </a>
         @endcan
 
-        <div class="nav-section-title">System</div>
+        <div class="nav-section-title">Locations</div>
         @can('manage_shipping')
-        <a href="{{ route('admin.shipping.index') }}" class="sidebar-link {{ request()->routeIs('admin.shipping.*') ? 'active' : '' }}">
-            <i class="bi bi-truck"></i> Shipping
+        <a href="{{ route('admin.cities.index') }}" class="sidebar-link {{ request()->routeIs('admin.cities.*') ? 'active' : '' }}">
+            <i class="bi bi-geo-alt"></i> Cities & Shipping
         </a>
         @endcan
+
+        <div class="nav-section-title">System</div>
         @if(auth()->user() && auth()->user()->isSuperAdmin())
         <a href="{{ route('admin.roles.index') }}" class="sidebar-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
             <i class="bi bi-shield-lock"></i> Roles & Permissions
@@ -457,6 +460,9 @@
         @can('manage_settings')
         <a href="{{ route('admin.settings.index') }}" class="sidebar-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
             <i class="bi bi-gear"></i> Settings
+        </a>
+        <a href="{{ route('admin.payment-methods.index') }}" class="sidebar-link {{ request()->routeIs('admin.payment-methods.*') ? 'active' : '' }}">
+            <i class="bi bi-wallet2"></i> Payment Methods
         </a>
         @endcan
 

@@ -81,7 +81,7 @@
             <div class="filter-group">
                 <select id="filter-status" class="form-select" style="min-width:140px;height:38px;font-size:.85rem">
                     <option value="">All Status</option>
-                    @foreach(['pending','processing','shipped','delivered','cancelled'] as $s)
+                    @foreach(['pending','confirmed','processing','shipped','delivered','cancelled'] as $s)
                         <option value="{{ $s }}">{{ ucfirst($s) }}</option>
                     @endforeach
                 </select>

@@ -51,17 +51,70 @@
             @php $mainImgSrc = $product->images->first()?->image_path ? asset('storage/' . $product->images->first()->image_path) : ($product->featured_image ? asset('storage/' . $product->featured_image) : asset('images/no-image.png')); @endphp
             <div class="mb-3" style="border-radius: 12px; overflow: hidden; border: 1px solid #e0e0e0;">
                 <img id="mainProductImg" src="{{ $mainImgSrc }}" alt="{{ $product->name }}" class="w-100" style="height: 420px; object-fit: cover;">
+                <iframe id="mainProductVideo" class="w-100" style="height: 420px; display: none;" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
             </div>
-            @if($product->images->count() > 1)
+            
             <div class="d-flex gap-2 flex-wrap">
-                @foreach($product->images as $img)
-                <img src="{{ asset('storage/' . $img->image_path) }}" alt="" class="thumb-img"
-                     onclick="document.getElementById('mainProductImg').src = this.src"
-                     style="width:70px; height:70px; object-fit:cover; border-radius:8px; cursor:pointer; border: 2px solid transparent; transition:.2s;"
-                     onmouseover="this.style.borderColor='#1B3A5C'" onmouseout="this.style.borderColor='transparent'">
-                @endforeach
+                @if($product->video_url)
+                    @php
+                        $embedUrl = $product->video_url;
+                        $vidId = '';
+                        if(str_contains($embedUrl, 'youtube.com/watch?v=')) {
+                            $embedUrl = str_replace('youtube.com/watch?v=', 'youtube.com/embed/', $embedUrl);
+                            $embedUrl = explode('&', $embedUrl)[0];
+                            $vidId = explode('v=', $product->video_url)[1] ?? '';
+                            $vidId = explode('&', $vidId)[0] ?? '';
+                        } elseif(str_contains($embedUrl, 'youtu.be/')) {
+                            $embedUrl = str_replace('youtu.be/', 'youtube.com/embed/', $embedUrl);
+                            $embedUrl = explode('?', $embedUrl)[0];
+                            $vidId = explode('youtu.be/', $product->video_url)[1] ?? '';
+                            $vidId = explode('?', $vidId)[0] ?? '';
+                        }
+                    @endphp
+                    <div onclick="showMedia('video', '{{ $embedUrl }}')"
+                         style="width:70px; height:70px; border-radius:8px; cursor:pointer; border: 2px solid transparent; transition:.2s; position:relative; overflow:hidden; background:#000;"
+                         onmouseover="this.style.borderColor='#1B3A5C'" onmouseout="this.style.borderColor='transparent'">
+                        @if($vidId)
+                            <img src="https://img.youtube.com/vi/{{ $vidId }}/0.jpg" style="width:100%;height:100%;object-fit:cover;opacity:0.7">
+                        @else
+                            <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#333"><i class="bi bi-camera-video text-white fs-4"></i></div>
+                        @endif
+                        <i class="bi bi-play-circle text-white fs-4" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"></i>
+                    </div>
+                @endif
+                
+                @if($product->featured_image || $product->images->count() > 0)
+                    @php 
+                        $allImages = collect();
+                        if($product->featured_image) $allImages->push($product->featured_image);
+                        $product->images->each(function($img) use ($allImages) { $allImages->push($img->image_path); });
+                        $allImages = $allImages->unique();
+                    @endphp
+                    @foreach($allImages as $imgPath)
+                    <img src="{{ asset('storage/' . $imgPath) }}" alt="" class="thumb-img"
+                         onclick="showMedia('image', this.src)"
+                         style="width:70px; height:70px; object-fit:cover; border-radius:8px; cursor:pointer; border: 2px solid transparent; transition:.2s;"
+                         onmouseover="this.style.borderColor='#1B3A5C'" onmouseout="this.style.borderColor='transparent'">
+                    @endforeach
+                @endif
             </div>
-            @endif
+
+            <script>
+                function showMedia(type, src) {
+                    const img = document.getElementById('mainProductImg');
+                    const vid = document.getElementById('mainProductVideo');
+                    if(type === 'video') {
+                        img.style.display = 'none';
+                        vid.src = src;
+                        vid.style.display = 'block';
+                    } else {
+                        vid.style.display = 'none';
+                        vid.src = '';
+                        img.src = src;
+                        img.style.display = 'block';
+                    }
+                }
+            </script>
         </div>
 
         {{-- Product Details --}}
@@ -133,11 +186,10 @@
                         onclick="addToCart({{ $product->id }}, document.getElementById('variantSelect')?.value || null, parseInt(document.getElementById('qtyInput').value))">
                     <i class="bi bi-cart-plus me-2"></i>Add to Cart
                 </button>
-                @auth
                 <button class="btn btn-outline-danger btn-lg" onclick="toggleWishlist({{ $product->id }}, this)">
-                    <i class="bi bi-heart{{ $isInWishlist ? '-fill' : '' }}"></i>
+                    @php $inWishlist = auth()->check() ? auth()->user()->wishlist()->where('product_id', $product->id)->exists() : false; @endphp
+                    <i class="bi bi-heart{{ $inWishlist ? '-fill' : '' }}"></i>
                 </button>
-                @endauth
                 <a href="{{ route('checkout.index') }}" class="btn btn-warning btn-lg fw-600 px-4 buy-now-btn" style="border-radius:8px; font-weight:600">
                     Buy Now <i class="bi bi-arrow-right ms-1"></i>
                 </a>
@@ -263,11 +315,21 @@ function changeQty(delta) {
 }
 function toggleWishlist(id, btn) {
     const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    fetch(`/account/wishlist/${id}`, { method:'POST', headers:{'X-CSRF-TOKEN': csrf,'Accept':'application/json'} })
-    .then(r => r.json()).then(d => {
+    const apiUrl = "{{ url('/account/wishlist') }}/" + id;
+    fetch(apiUrl, { method:'POST', headers:{'X-CSRF-TOKEN': csrf,'Accept':'application/json'} })
+    .then(r => {
+        if (r.status === 401) {
+            window.location.href = '/login';
+            return null;
+        }
+        return r.json();
+    }).then(d => {
+        if (!d) return;
         const i = btn.querySelector('i');
         i.className = d.in_wishlist ? 'bi bi-heart-fill' : 'bi bi-heart';
         Swal.fire({icon:'success',title:d.message,toast:true,position:'top-end',showConfirmButton:false,timer:2000});
+    }).catch(err => {
+        console.error('Wishlist error:', err);
     });
 }
 

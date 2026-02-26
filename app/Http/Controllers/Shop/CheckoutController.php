@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Shop;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Cart, Order, OrderItem, OrderStatusHistory, Coupon, Product};
+use App\Models\{Cart, Order, OrderItem, OrderStatusHistory, Coupon, Product, City, PaymentMethod};
 use Illuminate\Http\Request;
 
 class CheckoutController extends Controller
@@ -22,8 +22,10 @@ class CheckoutController extends Controller
         $total    = max(0, $subtotal - $discount);
 
         $addresses = auth()->check() ? auth()->user()->addresses()->get() : collect();
+        $cities = City::where('is_active', true)->orderBy('name')->get();
+        $paymentMethods = PaymentMethod::where('is_active', true)->orderBy('id')->get();
 
-        return view('shop.checkout.index', compact('cart', 'coupon', 'subtotal', 'discount', 'total', 'addresses'));
+        return view('shop.checkout.index', compact('cart', 'coupon', 'subtotal', 'discount', 'total', 'addresses', 'cities', 'paymentMethods'));
     }
 
     public function placeOrder(Request $request)
@@ -38,34 +40,48 @@ class CheckoutController extends Controller
             'email'          => 'required|email',
             'phone'          => 'required|string|max:20',
             'address_line1'  => 'required|string|max:255',
-            'city'           => 'required|string|max:100',
-            'state'          => 'nullable|string|max:100',
-            'postal_code'    => 'nullable|string|max:20',
-            'payment_method' => 'required|in:cod,bank_transfer',
+            'city_id'        => 'required|exists:cities,id',
+            'payment_method' => 'required|exists:payment_methods,type',
             'notes'          => 'nullable|string|max:500',
         ]);
+
+        $city = City::findOrFail($data['city_id']);
 
         $cart->load(['items.product', 'items.variant']);
         $coupon   = $cart->coupon_code ? Coupon::where('code', $cart->coupon_code)->first() : null;
         $subtotal = $cart->subtotal;
         $discount = $coupon ? $coupon->calculateDiscount($subtotal) : 0;
-        $total    = max(0, $subtotal - $discount);
+        $shipping = $city->shipping_cost;
+        $total    = max(0, $subtotal - $discount) + $shipping;
+
+        // If user is not logged in but provides an email that exists in the system,
+        // silently link the order to that user account.
+        $userId = auth()->id();
+        $isGuest = !auth()->check();
+
+        if ($isGuest) {
+            $existingUser = \App\Models\User::where('email', $data['email'])->first();
+            if ($existingUser) {
+                $userId = $existingUser->id;
+                $isGuest = false;
+            }
+        }
 
         $order = Order::create([
-            'user_id'          => auth()->id(),
-            'guest_name'       => auth()->check() ? null : $data['name'],
-            'guest_email'      => auth()->check() ? null : $data['email'],
-            'guest_phone'      => auth()->check() ? null : $data['phone'],
+            'user_id'          => $userId,
+            'guest_name'       => $isGuest ? $data['name'] : null,
+            'guest_email'      => $isGuest ? $data['email'] : null,
+            'guest_phone'      => $isGuest ? $data['phone'] : null,
             'shipping_name'    => $data['name'],
             'shipping_phone'   => $data['phone'],
             'shipping_address' => $data['address_line1'],
-            'shipping_city'    => $data['city'],
-            'shipping_state'   => $data['state'] ?? null,
-            'shipping_postal'  => $data['postal_code'] ?? null,
+            'shipping_city'    => $city->name,
+            'shipping_state'   => null,
+            'shipping_postal'  => null,
             'shipping_country' => 'Bangladesh',
             'subtotal'         => $subtotal,
             'discount'         => $discount,
-            'shipping_cost'    => 0,
+            'shipping_cost'    => $shipping,
             'total'            => $total,
             'coupon_code'      => $coupon?->code,
             'payment_method'   => $data['payment_method'],
@@ -83,8 +99,10 @@ class CheckoutController extends Controller
                 'quantity'     => $item->quantity,
                 'subtotal'     => $item->price * $item->quantity,
             ]);
-            // Deduct stock
-            $item->product->decrement('stock', $item->quantity);
+            // Deduct stock safely to prevent BIGINT UNSIGNED error on zero stock
+            if ($item->product->stock > 0) {
+                $item->product->decrement('stock', min($item->quantity, $item->product->stock));
+            }
         }
 
         // Record initial status

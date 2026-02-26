@@ -112,7 +112,7 @@
                                                     View
                                                 </a>
                                             @endif
-                                            <form action="{{ route('wishlist.toggle',$product) }}" method="POST">
+                                            <form action="{{ route('account.wishlist.toggle',$product) }}" method="POST">
                                                 @csrf
                                                 <button type="submit" class="btn btn-outline-danger btn-sm" title="Remove from wishlist">
                                                     <i class="bi bi-heartbreak"></i>

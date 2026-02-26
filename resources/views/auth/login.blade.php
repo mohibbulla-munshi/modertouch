@@ -60,5 +60,9 @@ function togglePwd() {
     f.type = f.type === 'password' ? 'text' : 'password';
     i.className = f.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
 }
+
+@if(session('reg_success'))
+{{-- Popup removed as per request --}}
+@endif
 </script>
 @endsection

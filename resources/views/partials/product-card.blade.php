@@ -26,16 +26,27 @@
             @endif
 
             {{-- Wishlist quick action --}}
-            @auth
             <button class="quick-action-btn" style="position:absolute;top:8px;right:8px;z-index:2;opacity:0;transition:opacity .2s"
-                    onclick="event.preventDefault();toggleWishlist({{ $product->id }}, this)" title="Wishlist">
-                <i class="bi bi-heart{{ auth()->user()->wishlist()->where('product_id', $product->id)->exists() ? '-fill' : '' }}"
-                   style="{{ auth()->user()->wishlist()->where('product_id', $product->id)->exists() ? 'color:#EF4444' : '' }}"></i>
+                    onclick="event.preventDefault(); event.stopPropagation(); toggleWishlist({{ $product->id }}, this)" title="Wishlist">
+                @php $inWishlist = auth()->check() ? auth()->user()->wishlist()->where('product_id', $product->id)->exists() : false; @endphp
+                <i class="bi bi-heart{{ $inWishlist ? '-fill' : '' }}"
+                   style="{{ $inWishlist ? 'color:#EF4444' : '' }}"></i>
             </button>
-            @endauth
 
             <img src="{{ $imgSrc }}" alt="{{ $product->name }}" loading="lazy"
                  style="width:100%;height:190px;object-fit:cover;display:block;transition:transform .4s;">
+
+            {{-- Chaldal-style Add to Cart --}}
+            <div class="chaldal-cart-action" data-product-id="{{ $product->id }}">
+                <button type="button" class="btn-chaldal-add" onclick="event.preventDefault(); event.stopPropagation(); updateCartQty({{ $product->id }}, 1)">
+                    <i class="bi bi-bag-plus"></i> <span style="font-size:12px;">Add</span>
+                </button>
+                <div class="chaldal-qty-controls" style="display:none;">
+                    <button type="button" onclick="event.preventDefault(); event.stopPropagation(); updateCartQty({{ $product->id }}, 'dec')"><i class="bi bi-dash-lg"></i></button>
+                    <span class="chaldal-qty-val">1</span>
+                    <button type="button" onclick="event.preventDefault(); event.stopPropagation(); updateCartQty({{ $product->id }}, 'inc')"><i class="bi bi-plus-lg"></i></button>
+                </div>
+            </div>
         </div>
 
         {{-- Card Body --}}
@@ -79,12 +90,32 @@
 <script>
 function toggleWishlist(productId, btn) {
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
-    fetch(`/account/wishlist/${productId}`, {
+    const url = "{{ url('/account/wishlist') }}/" + productId;
+    fetch(url, {
         method: 'POST', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
-    }).then(r => r.json()).then(d => {
+    }).then(r => {
+        if (r.status === 401) {
+            window.location.href = '/login';
+            return null;
+        }
+        return r.json();
+    }).then(d => {
+        if (!d) return;
         const icon = btn.querySelector('i');
         icon.className = d.in_wishlist ? 'bi bi-heart-fill' : 'bi bi-heart';
         icon.style.color = d.in_wishlist ? '#EF4444' : '';
+        
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'success', 
+                title: d.message || (d.in_wishlist ? 'Added to Wishlist' : 'Removed from Wishlist'),
+                toast: true, position: 'top-end',
+                showConfirmButton: false, timer: 1500,
+                timerProgressBar: true
+            });
+        }
+    }).catch(err => {
+        console.error('Wishlist error:', err);
     });
 }
 </script>

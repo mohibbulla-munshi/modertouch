@@ -26,7 +26,7 @@
                     <form method="GET" action="{{ route('account.orders') }}" class="d-flex gap-2 align-items-center">
                         <select name="status" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
                             <option value="">All Statuses</option>
-                            @foreach(['pending','processing','shipped','delivered','cancelled'] as $s)
+                            @foreach(['pending','confirmed','processing','shipped','delivered','cancelled'] as $s)
                                 <option value="{{ $s }}" {{ request('status')===$s?'selected':'' }}>{{ ucfirst($s) }}</option>
                             @endforeach
                         </select>
@@ -46,7 +46,7 @@
                     <div class="d-flex flex-column gap-3">
                         @foreach($orders as $order)
                         @php
-                            $statusMap = ['pending'=>['warning','clock'],'processing'=>['info','gear'],'shipped'=>['primary','truck'],'delivered'=>['success','check-circle'],'cancelled'=>['danger','x-circle']];
+                            $statusMap = ['pending'=>['warning','clock'],'confirmed'=>['info','check'],'processing'=>['primary','gear'],'shipped'=>['secondary','truck'],'delivered'=>['success','check-circle'],'cancelled'=>['danger','x-circle']];
                             [$sc,$si] = $statusMap[$order->status] ?? ['secondary','circle'];
                             $payMap = ['pending'=>'warning','paid'=>'success','failed'=>'danger','refunded'=>'secondary'];
                         @endphp

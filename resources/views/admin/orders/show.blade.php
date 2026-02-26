@@ -188,8 +188,20 @@
                     <div class="mb-3">
                         <label class="form-label">Update Status To</label>
                         <select name="status" class="form-select">
-                            @foreach(['pending','processing','shipped','delivered','cancelled'] as $s)
+                            @foreach(['pending','confirmed','processing','shipped','delivered','cancelled'] as $s)
                             <option value="{{ $s }}" {{ $order->status == $s ? 'selected' : '' }}>
+                                {{ ucfirst($s) }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Update Payment Status --}}
+                    <div class="mb-3">
+                        <label class="form-label">Update Payment Status</label>
+                        <select name="payment_status" class="form-select">
+                            @foreach(['pending','paid','failed','refunded'] as $s)
+                            <option value="{{ $s }}" {{ $order->payment_status == $s ? 'selected' : '' }}>
                                 {{ ucfirst($s) }}
                             </option>
                             @endforeach

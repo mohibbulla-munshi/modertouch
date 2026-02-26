@@ -30,7 +30,7 @@
                 </div>
 
                 @php
-                    $statusMap = ['pending'=>'warning','processing'=>'info','shipped'=>'primary','delivered'=>'success','cancelled'=>'danger'];
+                    $statusMap = ['pending'=>'warning','confirmed'=>'info','processing'=>'primary','shipped'=>'secondary','delivered'=>'success','cancelled'=>'danger'];
                     $payMap    = ['pending'=>'warning','paid'=>'success','failed'=>'danger','refunded'=>'secondary'];
                 @endphp
 

@@ -71,9 +71,9 @@ class ProductController extends Controller
             if ($p->is_featured) $name .= '<span style="font-size:.62rem;font-weight:700;color:#F0A500"><i class="bi bi-star-fill me-1"></i>Featured</span> ';
             if ($p->trashed())   $name .= '<span class="badge bg-danger" style="font-size:.6rem">Trashed</span>';
 
-            // Price (stored in cents)
-            $price = '<div style="font-weight:700;color:#1A3A5C">৳'.number_format($p->price / 100, 2).'</div>';
-            if ($p->sale_price)  $price .= '<div style="font-size:.72rem;color:#10B981">Sale: ৳'.number_format($p->sale_price / 100, 2).'</div>';
+            // Price (handled by Eloquent accessor)
+            $price = '<div style="font-weight:700;color:#1A3A5C">৳'.number_format($p->price, 2).'</div>';
+            if ($p->sale_price)  $price .= '<div style="font-size:.72rem;color:#10B981">Sale: ৳'.number_format($p->sale_price, 2).'</div>';
 
             // Stock badge
             if ($p->stock <= 0) {
@@ -228,6 +228,7 @@ class ProductController extends Controller
             'low_stock_threshold' => 'nullable|integer|min:1',
             'weight'            => 'nullable|numeric|min:0',
             'dimensions'        => 'nullable|string|max:100',
+            'video_url'         => 'nullable|url|max:255',
             'meta_title'        => 'nullable|string|max:160',
             'meta_description'  => 'nullable|string|max:320',
             'is_active'         => 'boolean',

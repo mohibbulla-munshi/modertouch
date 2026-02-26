@@ -106,7 +106,7 @@
 
 {{-- ═══ SHIPPING BANNER ════════════════════════════════════════════ --}}
 <div class="ship-banner mb-4">
-    <span>🚚 Looking for Bulk / Shipping Service?</span>
+    <span>🚚 Looking for Custom / Bulk Order?</span>
     <a href="{{ route('contact') }}">Contact Us →</a>
 </div>
 
