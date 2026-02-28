@@ -71,10 +71,19 @@ class CartController extends Controller
             'quantity'   => 'nullable|integer|min:1|max:100',
         ]);
 
-        $product  = Product::findOrFail($request->product_id);
-        $variant  = $request->variant_id ? ProductVariant::find($request->variant_id) : null;
-        $price    = $variant?->price ?? $product->current_price;
+        $product = Product::findOrFail($request->product_id);
+        
+        $variant = null;
+        if ($request->variant_id) {
+            $variant = $product->variants()->find($request->variant_id);
+            if (!$variant) {
+                return redirect()->back()->with('error', 'Invalid variant selected.');
+            }
+        }
+
+        $price = $variant?->price ?? $product->current_price;
         $quantity = $request->quantity ?? 1;
+
 
         $cart = $this->getOrCreateCart();
         $item = $cart->items()
@@ -113,46 +122,67 @@ class CartController extends Controller
             'product_id' => 'required|exists:products,id',
             'variant_id' => 'nullable|exists:product_variants,id',
             'quantity'   => 'required|integer|min:0|max:100',
+            'increment'  => 'nullable|boolean',
         ]);
 
-        $product  = Product::findOrFail($request->product_id);
-        $variant  = $request->variant_id ? ProductVariant::find($request->variant_id) : null;
-        $price    = $variant?->price ?? $product->current_price;
-        $quantity = $request->quantity;
+        $product = Product::findOrFail($request->product_id);
+        
+        $variant = null;
+        if ($request->variant_id) {
+            $variant = $product->variants()->find($request->variant_id);
+            if (!$variant) {
+                return response()->json(['success' => false, 'message' => 'Invalid variant selected.'], 400);
+            }
+        }
+
+        $price = $variant?->price ?? $product->current_price;
+        $quantity = (int) $request->quantity;
+        $isIncrement = $request->boolean('increment');
 
         $cart = $this->getOrCreateCart();
+
         $item = $cart->items()
             ->where('product_id', $product->id)
             ->where('variant_id', $request->variant_id)
             ->first();
 
-        if ($quantity <= 0) {
+        if ($quantity <= 0 && !$isIncrement) {
             if ($item) {
                 $item->delete();
             }
         } else {
             if ($item) {
-                $item->update(['quantity' => $quantity]);
+                $newQty = $isIncrement ? ($item->quantity + $quantity) : $quantity;
+                if ($newQty <= 0) {
+                    $item->delete();
+                } else {
+                    $item->update(['quantity' => $newQty]);
+                }
             } else {
-                $cart->items()->create([
-                    'product_id' => $product->id,
-                    'variant_id' => $request->variant_id,
-                    'quantity'   => $quantity,
-                    'price'      => $price,
-                ]);
+                if ($quantity > 0) {
+                    $cart->items()->create([
+                        'product_id' => $product->id,
+                        'variant_id' => $request->variant_id,
+                        'quantity'   => $quantity,
+                        'price'      => $price,
+                    ]);
+                }
             }
         }
 
-        $items = [];
+
+        $itemsData = [];
         foreach ($cart->fresh()->items as $cartItem) {
-            $items[$cartItem->product_id] = $cartItem->quantity;
+            $key = $cartItem->variant_id ? "{$cartItem->product_id}_{$cartItem->variant_id}" : (string)$cartItem->product_id;
+            $itemsData[$key] = $cartItem->quantity;
         }
 
         return response()->json([
             'success' => true,
             'count'   => $cart->fresh()->item_count,
-            'items'   => $items
+            'items'   => $itemsData
         ]);
+
     }
 
     public function remove(CartItem $item)

@@ -89,9 +89,9 @@
 
                                         {{-- Price --}}
                                         <div class="d-flex align-items-baseline gap-2 mb-3">
-                                            <span class="fw-800" style="color:var(--teal);font-size:1rem">৳{{ number_format($displayPrice/100,2) }}</span>
+                                            <span class="fw-800" style="color:var(--teal);font-size:1rem">৳{{ number_format($displayPrice,2) }}</span>
                                             @if($product->sale_price)
-                                                <span class="text-muted text-decoration-line-through" style="font-size:.8rem">৳{{ number_format($product->price/100,2) }}</span>
+                                                <span class="text-muted text-decoration-line-through" style="font-size:.8rem">৳{{ number_format($product->price,2) }}</span>
                                             @endif
                                         </div>
 

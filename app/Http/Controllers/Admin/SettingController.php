@@ -62,8 +62,8 @@ class SettingController extends Controller
     {
         $request->validate(['test_email' => 'required|email']);
         try {
-            \Mail::raw('This is a test email from Modern Touch BD admin panel.', function ($m) use ($request) {
-                $m->to($request->test_email)->subject('Test Email - Modern Touch BD');
+            \Mail::raw('This is a test email from ' . \App\Models\Setting::getValue('app_name', 'Modern Touch BD') . ' admin panel.', function ($m) use ($request) {
+                $m->to($request->test_email)->subject('Test Email - ' . \App\Models\Setting::getValue('app_name', 'Modern Touch BD'));
             });
             return back()->with('success', 'Test email sent to ' . $request->test_email);
         } catch (\Exception $e) {

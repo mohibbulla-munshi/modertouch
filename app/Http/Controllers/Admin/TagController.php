@@ -19,8 +19,13 @@ class TagController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate(['name' => 'required|string|unique:tags|max:80']);
-        $tag = Tag::create(['name' => $request->name, 'slug' => Str::slug($request->name)]);
+        $request->validate([
+            'name' => 'required|string|unique:tags|max:80',
+            'slug' => 'nullable|string|unique:tags,slug|max:255'
+        ]);
+        
+        $slug = $request->slug ?: Str::slug($request->name);
+        $tag = Tag::create(['name' => $request->name, 'slug' => $slug]);
         return redirect()->route('admin.tags.index')->with('success', 'Tag created.');
     }
 
@@ -28,8 +33,13 @@ class TagController extends Controller
 
     public function update(Request $request, Tag $tag)
     {
-        $request->validate(['name' => "required|string|unique:tags,name,{$tag->id}|max:80"]);
-        $tag->update(['name' => $request->name, 'slug' => Str::slug($request->name)]);
+        $request->validate([
+            'name' => "required|string|unique:tags,name,{$tag->id}|max:80",
+            'slug' => "nullable|string|unique:tags,slug,{$tag->id}|max:255"
+        ]);
+        
+        $slug = $request->slug ?: Str::slug($request->name);
+        $tag->update(['name' => $request->name, 'slug' => $slug]);
         return redirect()->route('admin.tags.index')->with('success', 'Tag updated.');
     }
 

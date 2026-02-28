@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Shop;
 use App\Http\Controllers\Controller;
 use App\Models\{Cart, Order, OrderItem, OrderStatusHistory, Coupon, Product, City, PaymentMethod};
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use DGvai\SSLCommerz\SSLCommerz;
 
 class CheckoutController extends Controller
 {
@@ -24,8 +26,10 @@ class CheckoutController extends Controller
         $addresses = auth()->check() ? auth()->user()->addresses()->get() : collect();
         $cities = City::where('is_active', true)->orderBy('name')->get();
         $paymentMethods = PaymentMethod::where('is_active', true)->orderBy('id')->get();
+        
+        $wallet = auth()->check() ? auth()->user()->wallet : null;
 
-        return view('shop.checkout.index', compact('cart', 'coupon', 'subtotal', 'discount', 'total', 'addresses', 'cities', 'paymentMethods'));
+        return view('shop.checkout.index', compact('cart', 'coupon', 'subtotal', 'discount', 'total', 'addresses', 'cities', 'paymentMethods', 'wallet'));
     }
 
     public function placeOrder(Request $request)
@@ -67,62 +71,110 @@ class CheckoutController extends Controller
             }
         }
 
-        $order = Order::create([
-            'user_id'          => $userId,
-            'guest_name'       => $isGuest ? $data['name'] : null,
-            'guest_email'      => $isGuest ? $data['email'] : null,
-            'guest_phone'      => $isGuest ? $data['phone'] : null,
-            'shipping_name'    => $data['name'],
-            'shipping_phone'   => $data['phone'],
-            'shipping_address' => $data['address_line1'],
-            'shipping_city'    => $city->name,
-            'shipping_state'   => null,
-            'shipping_postal'  => null,
-            'shipping_country' => 'Bangladesh',
-            'subtotal'         => $subtotal,
-            'discount'         => $discount,
-            'shipping_cost'    => $shipping,
-            'total'            => $total,
-            'coupon_code'      => $coupon?->code,
-            'payment_method'   => $data['payment_method'],
-            'notes'            => $data['notes'] ?? null,
-        ]);
-
-        foreach ($cart->items as $item) {
-            OrderItem::create([
-                'order_id'     => $order->id,
-                'product_id'   => $item->product_id,
-                'variant_id'   => $item->variant_id,
-                'product_name' => $item->product->name,
-                'variant_name' => $item->variant?->name,
-                'price'        => $item->price,
-                'quantity'     => $item->quantity,
-                'subtotal'     => $item->price * $item->quantity,
-            ]);
-            // Deduct stock safely to prevent BIGINT UNSIGNED error on zero stock
-            if ($item->product->stock > 0) {
-                $item->product->decrement('stock', min($item->quantity, $item->product->stock));
-            }
+        // Wallet Preliminary Logic (prevent unauthenticated)
+        if ($data['payment_method'] === 'wallet' && ($isGuest || !auth()->check())) {
+            return back()->with('error', 'You must be logged in to use your digital wallet.')->withInput();
         }
 
-        // Record initial status
-        OrderStatusHistory::create([
-            'order_id' => $order->id,
-            'status'   => 'pending',
-            'comment'  => 'Order placed.',
-        ]);
+        try {
+            DB::beginTransaction();
 
-        // Increment coupon usage
-        if ($coupon) $coupon->increment('used_count');
+            // Re-fetch Wallet with Pessimistic Lock if paying with Wallet
+            if ($data['payment_method'] === 'wallet') {
+                $wallet = auth()->user()->wallet()->lockForUpdate()->first();
+                if (!$wallet || $wallet->balance < $total) {
+                    DB::rollBack();
+                    return back()->with('error', 'Insufficient wallet balance. Please choose another payment method.')->withInput();
+                }
+                // We will deduct the balance after order creation to log the reference ID
+            }
 
-        // Clear cart
-        $cart->items()->delete();
-        $cart->update(['coupon_code' => null]);
+            $order = Order::create([
+                'user_id'          => $userId,
+                'guest_name'       => $isGuest ? $data['name'] : null,
+                'guest_email'      => $isGuest ? $data['email'] : null,
+                'guest_phone'      => $isGuest ? $data['phone'] : null,
+                'shipping_name'    => $data['name'],
+                'shipping_phone'   => $data['phone'],
+                'shipping_address' => $data['address_line1'],
+                'shipping_city'    => $city->name,
+                'shipping_state'   => null,
+                'shipping_postal'  => null,
+                'shipping_country' => 'Bangladesh',
+                'subtotal'         => $subtotal,
+                'discount'         => $discount,
+                'shipping_cost'    => $shipping,
+                'total'            => $total,
+                'coupon_code'      => $coupon?->code,
+                'payment_method'   => $data['payment_method'],
+                'notes'            => $data['notes'] ?? null,
+            ]);
 
-        // TODO: send confirmation email
-        // Mail::to($data['email'])->send(new OrderConfirmationMail($order));
+            foreach ($cart->items as $item) {
+                OrderItem::create([
+                    'order_id'     => $order->id,
+                    'product_id'   => $item->product_id,
+                    'variant_id'   => $item->variant_id,
+                    'product_name' => $item->product->name,
+                    'variant_name' => $item->variant?->name,
+                    'price'        => $item->price,
+                    'quantity'     => $item->quantity,
+                    'subtotal'     => $item->price * $item->quantity,
+                ]);
+                // Deduct stock safely to prevent BIGINT UNSIGNED error on zero stock
+                if ($item->product->stock > 0) {
+                    // It's better to decrement on the database directly for concurrency safety
+                    $item->product->decrement('stock', min($item->quantity, $item->product->stock));
+                }
+            }
 
-        return redirect()->route('checkout.success', $order)->with('success', 'Your order has been placed!');
+            OrderStatusHistory::create([
+                'order_id' => $order->id,
+                'status'   => 'pending',
+                'comment'  => 'Order placed.',
+            ]);
+
+            if ($order->payment_method === 'wallet') {
+                $wallet = auth()->user()->wallet; // already locked
+                $wallet->decrement('balance', $order->total);
+                
+                $wallet->transactions()->create([
+                    'type' => 'debit',
+                    'amount' => $order->total,
+                    'description' => 'Payment for Order #' . $order->order_number,
+                    'reference_type' => 'order_payment',
+                    'reference_id' => $order->id,
+                ]);
+
+                $order->update(['payment_status' => 'paid']);
+            }
+
+            if ($coupon) $coupon->increment('used_count');
+
+            // Clear cart for ALL operations before finalizing
+            $cart->items()->delete();
+            $cart->update(['coupon_code' => null]);
+
+            DB::commit();
+
+            // Handle SSLCommerz external redirect outside of the transaction
+            if ($order->payment_method === 'sslcommerz') {
+                $sslc = new SSLCommerz();
+                $sslc->amount((float) $order->total)
+                    ->trxid($order->order_number)
+                    ->product('Order #' . $order->order_number)
+                    ->customer($order->shipping_name, $order->user ? $order->user->email : $order->guest_email, $order->shipping_phone, $order->shipping_address, $order->shipping_city);
+                
+                return $sslc->make_payment();
+            }
+
+            return redirect()->route('checkout.success', $order)->with('success', 'Your order has been placed!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'An error occurred while processing your order. Please try again.')->withInput();
+        }
+
     }
 
     public function success(Order $order)
